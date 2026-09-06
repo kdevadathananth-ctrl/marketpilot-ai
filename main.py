@@ -8,19 +8,20 @@ from flask_cors import CORS
 app = Flask(__name__, static_folder="static", static_url_path="")
 CORS(app)
 
-import json as _json
-_cred_json = __import__("os").environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
-if _cred_json:
-    _cred = credentials.Certificate(_json.loads(_cred_json))
-    initialize_app(_cred)
+cred_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+if cred_json:
+    cred = credentials.Certificate(json.loads(cred_json))
+    initialize_app(cred)
 else:
     initialize_app()
+    
 db = firestore.client()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-3.6-flash")
 
+# Restored to your original, valid model
+model = genai.GenerativeModel("gemini-3.6-flash")
 
 def verify_token(req):
     header = req.headers.get("Authorization", "")
@@ -33,11 +34,9 @@ def verify_token(req):
     except Exception:
         return None
 
-
 @app.route("/")
 def index():
     return send_from_directory("static", "index.html")
-
 
 @app.route("/api/generate-plan", methods=["POST"])
 def generate_plan():
@@ -52,32 +51,102 @@ def generate_plan():
     budget = data.get("budget", "")
 
     prompt = f"""
-Act as an elite AI Marketing Mentor advising the 'Hack2skill Gen AI Academy APAC Edition' cohort. 
-Do NOT generate generic, random business advice. You must provide a hyper-tailored, real-world strategy that directly leverages Gen AI tools, developer communities, and the specific context of the Hack2skill APAC cohort.
+    Act as an elite Market Intelligence & Brand Strategy Engine advising a participant in the 'Hack2skill Gen AI Academy APAC Edition'. 
+    
+    Contextualize "APAC" specifically as the Hack2skill cohort, startup network, and developer ecosystem—focusing on practical Google Cloud GenAI innovations—rather than geographic boundaries or cities.
 
-Business Details provided by the participant:
-Name: {business_name}
-Industry: {industry}
-Target Audience: {audience}
-Monthly budget: {budget}
+    Business Details:
+    - Name: {business_name}
+    - Industry: {industry}
+    - Target Audience: {audience}
+    - Budget: {budget}
 
-Make sure the ad copy, budget, and action steps mention real AI tools, tech community platforms (e.g., GitHub, Discord, Dev.to), and reference the Hack2skill ecosystem.
-
-Return the result STRICTLY as a valid JSON object with no markdown formatting and exactly these keys:
-- "ad_copy": array of 3 compelling, tech-forward ad copy variations tailored to or leveraging the Hack2skill APAC Gen AI cohort.
-- "budget_split": object mapping channel names (e.g., "Gen AI APIs & Tools", "Hack2skill Community Events", "Dev Outreach (Discord/GitHub)") to percentage numbers that sum to 100.
-- "trend_summary": a short paragraph (2-3 sentences) summarizing real-world Gen AI adoption and tech trends relevant to this hackathon cohort.
-- "recommended_actions": array of 3 short actionable next steps mentioning real Gen AI tools or Hack2skill community actions.
-"""
+    Generate an exhaustive 5-stage go-to-market and brand strategy. 
+    Stage 1: Local ID & Demographics (Audience profiling and ecosystem footprint).
+    Stage 2: Market Trends & Demand Signals (Tech disruptions and demand whitespace).
+    Stage 3: Competitor & Brand Audit (Direct/indirect matrix and value prop gaps).
+    Stage 4: Strategic Brand Positioning (Core identity, positioning wedge, and messaging pillars).
+    Stage 5: Turnkey Execution Roadmap (30-60-90 day GTM phasing, explicitly detailing how to leverage Google Cloud GenAI tools and Hack2skill community activations).
+    """
 
     try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-        if text.startswith("```"):
-            text = text.strip("`")
-            if text.startswith("json"):
-                text = text[4:]
-        plan = json.loads(text.strip())
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json",
+                response_schema={
+                    "type": "object",
+                    "properties": {
+                        "stage_1_local_id": {
+                            "type": "object",
+                            "properties": {
+                                "demographics_and_culture": {"type": "string", "description": "Cultural nuances and localized buyer behaviors"},
+                                "audience_segmentation": {"type": "string", "description": "Primary and secondary ICPs with pain points"},
+                                "channel_suitability": {"type": "string", "description": "Digital and community gathering places"}
+                            },
+                            "required": ["demographics_and_culture", "audience_segmentation", "channel_suitability"]
+                        },
+                        "stage_2_market_trends": {
+                            "type": "object",
+                            "properties": {
+                                "macro_micro_trends": {"type": "string", "description": "Fast-moving tech and industry trends"},
+                                "demand_and_whitespace": {"type": "string", "description": "Unmet customer frustrations and high-demand segments"},
+                                "pricing_dynamics": {"type": "string", "description": "Prevailing spending thresholds in the market"}
+                            },
+                            "required": ["macro_micro_trends", "demand_and_whitespace", "pricing_dynamics"]
+                        },
+                        "stage_3_competitor_audit": {
+                            "type": "object",
+                            "properties": {
+                                "competitor_matrix": {"type": "string", "description": "Direct and indirect competitor breakdown"},
+                                "value_prop_gap": {"type": "string", "description": "Where competitors fail and uncontested territory exists"}
+                            },
+                            "required": ["competitor_matrix", "value_prop_gap"]
+                        },
+                        "stage_4_brand_strategy": {
+                            "type": "object",
+                            "properties": {
+                                "core_identity": {"type": "string", "description": "Mission, vision, and core values"},
+                                "positioning_statement": {"type": "string", "description": "Exact wedge: Why you, why now, why this ecosystem"},
+                                "messaging_pillars": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Targeted angles for awareness, consideration, and conversion"
+                                }
+                            },
+                            "required": ["core_identity", "positioning_statement", "messaging_pillars"]
+                        },
+                        "stage_5_action_plan": {
+                            "type": "object",
+                            "properties": {
+                                "days_1_to_30": {"type": "string", "description": "Foundation and setup actions"},
+                                "days_31_to_60": {"type": "string", "description": "Market penetration and pilot campaigns"},
+                                "days_61_to_90": {"type": "string", "description": "Scale, retention loops, and referral mechanisms"},
+                                "gen_ai_tools_to_leverage": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Specific AI technologies to implement"
+                                },
+                                "community_activations": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Hack2skill community, startup network, and APAC ecosystem leverage points"
+                                }
+                            },
+                            "required": ["days_1_to_30", "days_31_to_60", "days_61_to_90", "gen_ai_tools_to_leverage", "community_activations"]
+                        }
+                    },
+                    "required": [
+                        "stage_1_local_id",
+                        "stage_2_market_trends",
+                        "stage_3_competitor_audit",
+                        "stage_4_brand_strategy",
+                        "stage_5_action_plan"
+                    ]
+                }
+            )
+        )
+        plan = json.loads(response.text)
     except Exception as e:
         return jsonify({"error": f"Generation failed: {str(e)}"}), 500
 
@@ -92,7 +161,6 @@ Return the result STRICTLY as a valid JSON object with no markdown formatting an
     })
 
     return jsonify({"plan": plan, "id": doc_ref.id})
-
 
 @app.route("/api/history", methods=["GET"])
 def history():
@@ -115,8 +183,7 @@ def history():
         results.append(item)
     return jsonify({"history": results})
 
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=False)
-            
+    
