@@ -52,17 +52,22 @@ def generate_plan():
     budget = data.get("budget", "")
 
     prompt = f"""
-You are an AI growth director for small businesses. Given the info below, produce a JSON object
-(no markdown, no backticks) with exactly these keys:
-- "ad_copy": array of 3 short ad copy variations
-- "budget_split": object mapping channel names (e.g. "Google Search", "Meta Ads", "Instagram") to percentage numbers that sum to 100
-- "trend_summary": a short paragraph (2-3 sentences) summarizing likely marketing trends relevant to this industry
-- "recommended_actions": array of 3 short actionable next steps
+Act as an elite AI Marketing Mentor advising the 'Hack2skill Gen AI Academy APAC Edition' cohort. 
+Do NOT generate generic, random business advice. You must provide a hyper-tailored, real-world strategy that directly leverages Gen AI tools, developer communities, and the specific context of the Hack2skill APAC cohort.
 
-Business name: {business_name}
+Business Details provided by the participant:
+Name: {business_name}
 Industry: {industry}
-Target audience: {audience}
+Target Audience: {audience}
 Monthly budget: {budget}
+
+Make sure the ad copy, budget, and action steps mention real AI tools, tech community platforms (e.g., GitHub, Discord, Dev.to), and reference the Hack2skill ecosystem.
+
+Return the result STRICTLY as a valid JSON object with no markdown formatting and exactly these keys:
+- "ad_copy": array of 3 compelling, tech-forward ad copy variations tailored to or leveraging the Hack2skill APAC Gen AI cohort.
+- "budget_split": object mapping channel names (e.g., "Gen AI APIs & Tools", "Hack2skill Community Events", "Dev Outreach (Discord/GitHub)") to percentage numbers that sum to 100.
+- "trend_summary": a short paragraph (2-3 sentences) summarizing real-world Gen AI adoption and tech trends relevant to this hackathon cohort.
+- "recommended_actions": array of 3 short actionable next steps mentioning real Gen AI tools or Hack2skill community actions.
 """
 
     try:
@@ -72,7 +77,7 @@ Monthly budget: {budget}
             text = text.strip("`")
             if text.startswith("json"):
                 text = text[4:]
-        plan = json.loads(text)
+        plan = json.loads(text.strip())
     except Exception as e:
         return jsonify({"error": f"Generation failed: {str(e)}"}), 500
 
@@ -114,3 +119,4 @@ def history():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=False)
+            
