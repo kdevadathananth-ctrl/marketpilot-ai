@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MarketPilot AI</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f1117; color: #e6e6e6; margin: 0; padding: 0; }
+  .container { max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  .sub { color: #9aa0ac; margin-bottom: 24px; font-size: 0.9rem; }
+  .card { background: #171a21; border: 1px solid #262a33; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  button { background: #4f7fff; color: white; border: none; border-radius: 8px; padding: 12px 18px; font-size: 0.95rem; cursor: pointer; width: 100%; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  input { width: 100%; padding: 10px 12px; margin: 6px 0 14px; border-radius: 8px; border: 1px solid #2c313c; background: #0f1117; color: #e6e6e6; font-size: 0.95rem; }
+  label { font-size: 0.85rem; color: #9aa0ac; }
+  #userBar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  #userBar span { font-size: 0.85rem; color: #9aa0ac; }
+  #userBar button { width: auto; padding: 8px 14px; font-size: 0.8rem; background: #262a33; }
+  .hidden { display: none !important; }
+  .plan-block { margin-top: 20px; }
+  .plan-block h3 { font-size: 1rem; margin-bottom: 8px; color: #a8c0ff; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.85rem; }
+  .bar-track { flex: 1; background: #262a33; border-radius: 6px; height: 10px; overflow: hidden; }
+  .bar-fill { background: #4f7fff; height: 100%; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 6px; font-size: 0.9rem; }
+  #loginScreen { text-align: center; padding-top: 60px; }
+  #error { color: #ff6b6b; font-size: 0.85rem; margin-top: 8px; }
+  #spinner { text-align: center; padding: 20px; color: #9aa0ac; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="loginScreen">
+    <h1>MarketPilot AI</h1>
+    <div class="sub">AI-generated marketing strategy for small businesses</div>
+    <button id="loginBtn">Sign in with Google</button>
+    <div id="error"></div>
+  </div>
+  <div id="app" class="hidden">
+    <div id="userBar">
+      <span id="userEmail"></span>
+      <button id="logoutBtn">Sign out</button>
+    </div>
+    <h1>MarketPilot AI</h1>
+    <div class="sub">Generate an AI marketing plan for your business</div>
+    <div class="card">
+      <label>Business name</label>
+      <input id="business_name" placeholder="e.g. Sunrise Bakery" />
+      <label>Industry</label>
+      <input id="industry" placeholder="e.g. Bakery / Food & Beverage" />
+      <label>Target audience</label>
+      <input id="audience" placeholder="e.g. Young families, local neighborhood" />
+      <label>Monthly ad budget (USD)</label>
+      <input id="budget" placeholder="e.g. 500" />
+      <button id="generateBtn">Generate Marketing Plan</button>
+      <div id="genError" style="color:#ff6b6b;font-size:0.85rem;margin-top:8px;"></div>
+    </div>
+    <div id="spinner" class="hidden">Generating your plan with Gemini…</div>
+    <div id="result"></div>
+  </div>
+</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB4S-6JXkuHHfYAg6-79WV0fFF9RDfELPw",
+    authDomain: "marketpilot-ai-8b40d.firebaseapp.com",
+    projectId: "marketpilot-ai-8b40d",
+    storageBucket: "marketpilot-ai-8b40d.firebasestorage.app",
+    messagingSenderId: "405893355281",
+    appId: "1:405893355281:web:27d0f7534afa6a5448deb0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  const loginScreen = document.getElementById("loginScreen");
+  const appEl = document.getElementById("app");
+  const userEmail = document.getElementById("userEmail");
+  const errorEl = document.getElementById("error");
+
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    errorEl.textContent = "";
+    try { await signInWithPopup(auth, provider); }
+    catch (e) { errorEl.textContent = e.message; }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loginScreen.classList.add("hidden");
+      appEl.classList.remove("hidden");
+      userEmail.textContent = user.email;
+    } else {
+      loginScreen.classList.remove("hidden");
+      appEl.classList.add("hidden");
+    }
+  });
+
+  document.getElementById("generateBtn").addEventListener("click", async () => {
+    const genError = document.getElementById("genError");
+    const spinner = document.getElementById("spinner");
+    const result = document.getElementById("result");
+    genError.textContent = "";
+    result.innerHTML = "";
+
+    const business_name = document.getElementById("business_name").value.trim();
+    const industry = document.getElementById("industry").value.trim();
+    const audience = document.getElementById("audience").value.trim();
+    const budget = document.getElementById("budget").value.trim();
+
+    if (!business_name || !industry) {
+      genError.textContent = "Please fill in at least business name and industry.";
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    spinner.classList.remove("hidden");
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
+        body: JSON.stringify({ business_name, industry, audience, budget })
+      });
+      const data = await res.json();
+      spinner.classList.add("hidden");
+      if (data.error) { genError.textContent = data.error; return; }
+      renderPlan(data.plan);
+    } catch (e) {
+      spinner.classList.add("hidden");
+      genError.textContent = "Something went wrong: " + e.message;
+    }
+  });
+
+  function renderPlan(plan) {
+    const result = document.getElementById("result");
+    let html = "";
+    html += `<div class="card plan-block"><h3>Ad Copy Suggestions</h3><ul>`;
+    (plan.ad_copy || []).forEach(c => html += `<li>${escapeHtml(c)}</li>`);
+    html += `</ul></div>`;
+    html += `<div class="card plan-block"><h3>Recommended Budget Split</h3>`;
+    const split = plan.budget_split || {};
+    Object.keys(split).forEach(channel => {
+      const pct = split[channel];
+      html += `<div class="bar-row"><span style="width:110px;">${escapeHtml(channel)}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div><span>${pct}%</span></div>`;
+    });
+    html += `</div>`;
+    html += `<div class="card plan-block"><h3>Trend Summary</h3><p style="font-size:0.9rem;color:#c7ccd6;">${escapeHtml(plan.trend_summary || "")}</p></div>`;
+    html += `<div class="card plan-block"><h3>Recommended Actions</h3><ul>`;
+    (plan.recommended_actions || []).forEach(a => html += `<li>${escapeHtml(a)}</li>`);
+    html += `</ul></div>`;
+    result.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
