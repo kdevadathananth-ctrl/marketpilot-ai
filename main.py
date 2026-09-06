@@ -20,7 +20,6 @@ db = firestore.client()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Restored to your original, valid model
 model = genai.GenerativeModel("gemini-3.6-flash")
 
 def verify_token(req):
@@ -50,23 +49,24 @@ def generate_plan():
     audience = data.get("audience", "")
     budget = data.get("budget", "")
 
+    # MODIFICATION 1: Strict brevity enforced in the prompt to prevent API timeouts
     prompt = f"""
-    Act as an elite Market Intelligence & Brand Strategy Engine advising a participant in the 'Hack2skill Gen AI Academy APAC Edition'. 
-    
+    Act as an elite Market Intelligence Engine advising a 'Hack2skill Gen AI Academy APAC Edition' participant. 
     Contextualize "APAC" specifically as the Hack2skill cohort, startup network, and developer ecosystem—focusing on practical Google Cloud GenAI innovations—rather than geographic boundaries or cities.
 
-    Business Details:
-    - Name: {business_name}
-    - Industry: {industry}
-    - Target Audience: {audience}
-    - Budget: {budget}
+    Business: {business_name}
+    Industry: {industry}
+    Audience: {audience}
+    Budget: {budget}
 
-    Generate an exhaustive 5-stage go-to-market and brand strategy. 
+    CRITICAL INSTRUCTION: You must be extremely concise to ensure fast API response times. Limit every single generated text field to 1 short sentence maximum. 
+
+    Generate an exhaustive 5-stage go-to-market strategy:
     Stage 1: Local ID & Demographics (Audience profiling and ecosystem footprint).
     Stage 2: Market Trends & Demand Signals (Tech disruptions and demand whitespace).
     Stage 3: Competitor & Brand Audit (Direct/indirect matrix and value prop gaps).
     Stage 4: Strategic Brand Positioning (Core identity, positioning wedge, and messaging pillars).
-    Stage 5: Turnkey Execution Roadmap (30-60-90 day GTM phasing, explicitly detailing how to leverage Google Cloud GenAI tools and Hack2skill community activations).
+    Stage 5: Turnkey Execution Roadmap (30-60-90 day GTM phasing, detailing Google Cloud GenAI tools and Hack2skill community activations).
     """
 
     try:
@@ -74,6 +74,7 @@ def generate_plan():
             prompt,
             generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",
+                max_output_tokens=800, # MODIFICATION 2: Hard limit on output length to beat the Render timeout
                 response_schema={
                     "type": "object",
                     "properties": {
