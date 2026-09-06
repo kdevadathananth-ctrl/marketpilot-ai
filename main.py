@@ -8,7 +8,13 @@ from flask_cors import CORS
 app = Flask(__name__, static_folder="static", static_url_path="")
 CORS(app)
 
-initialize_app()
+import json as _json
+_cred_json = __import__("os").environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+if _cred_json:
+    _cred = credentials.Certificate(_json.loads(_cred_json))
+    initialize_app(_cred)
+else:
+    initialize_app()
 db = firestore.client()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
